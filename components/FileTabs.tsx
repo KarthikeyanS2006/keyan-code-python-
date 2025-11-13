@@ -1,4 +1,3 @@
-
 import React, { useState, useRef, useEffect } from 'react';
 import type { EditorFile } from '../types';
 import CloseIcon from './icons/CloseIcon';
@@ -18,24 +17,18 @@ interface FileTabsProps {
   onRenameFile: (id: string, newName: string) => boolean;
 }
 
-const getFileIcon = (fileName: string): React.ReactNode => {
-    const extension = fileName.split('.').pop()?.toLowerCase();
-    const iconProps = { className: "w-4 h-4" };
+const FILE_ICONS: Record<string, React.FC<{ className?: string }>> = {
+    py: PythonIcon,
+    html: HTMLIcon,
+    css: CSSIcon,
+    js: JSIcon,
+    ts: TSIcon,
+};
 
-    switch (extension) {
-        case 'py':
-            return <PythonIcon {...iconProps} />;
-        case 'html':
-            return <HTMLIcon {...iconProps} />;
-        case 'css':
-            return <CSSIcon {...iconProps} />;
-        case 'js':
-            return <JSIcon {...iconProps} />;
-        case 'ts':
-            return <TSIcon {...iconProps} />;
-        default:
-            return <CodeIcon {...iconProps} />;
-    }
+const getFileIcon = (fileName: string): React.ReactNode => {
+    const extension = fileName.split('.').pop()?.toLowerCase() ?? '';
+    const IconComponent = FILE_ICONS[extension] || CodeIcon;
+    return <IconComponent className="w-4 h-4" />;
 };
 
 
