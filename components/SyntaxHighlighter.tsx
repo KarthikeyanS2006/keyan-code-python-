@@ -13,7 +13,7 @@ const TOKEN_STYLES = {
   default: 'text-gray-800 dark:text-gray-200',
 };
 
-// Simple regex-based highlighter
+// A more robust regex-based highlighter
 const highlightCode = (code: string): React.ReactNode => {
   const pythonKeywords = [
     'def', 'class', 'if', 'else', 'elif', 'for', 'while', 'return', 'import', 'from',
@@ -21,48 +21,59 @@ const highlightCode = (code: string): React.ReactNode => {
     'finally', 'with', 'lambda', 'yield', 'pass', 'continue', 'break'
   ];
   
-  const keywordRegex = new RegExp(`\\b(${pythonKeywords.join('|')})\\b`, 'g');
-  const functionRegex = /(\w+)\s*\(/g;
-  const commentRegex = /(#.*)/g;
-  const stringRegex = /(".*?"|'.*?')/g;
-  const numberRegex = /\b(\d+(\.\d*)?)\b/g;
+  // Regexes for testing if a token matches a type. Note the ^ and $ anchors.
+  const keywordTestRegex = new RegExp(`^(${pythonKeywords.join('|')})$`);
+  const commentTestRegex = /^#.*/;
+  const stringTestRegex = /^(?:"""[\s\S]*?"""|'''[\s\S]*?'''|".*?"|'.*?')$/;
+  const numberTestRegex = /^\d+(\.\d*)?$/;
+  const functionTestRegex = /^\w+\s*\($/;
 
-  const tokens = code
-    .split(new RegExp(`(${keywordRegex.source}|${commentRegex.source}|${stringRegex.source}|${numberRegex.source})`, 'g'))
-    .filter(Boolean);
+  // A single, comprehensive tokenizer regex. Order is important.
+  const tokenizer = new RegExp(
+    '(' +
+    // Triple-quoted strings
+    `"""[\\s\\S]*?"""|'''[\\s\\S]*?'''|` +
+    // Single-quoted strings
+    `".*?"|'.*?'|` +
+    // Comments
+    `#.*|` +
+    // Keywords
+    `\\b(?:${pythonKeywords.join('|')})\\b|` +
+    // Function calls
+    `\\b\\w+\\s*(?=\\()|`+
+    // Numbers
+    `\\b\\d+(?:\\.\\d*)?\\b` +
+    ')',
+    'g'
+  );
+
+  const tokens = code.split(tokenizer).filter(Boolean);
 
   return tokens.map((token, i) => {
-    if (keywordRegex.test(token)) {
-      return <span key={i} className={TOKEN_STYLES.keyword}>{token}</span>;
-    }
-    if (commentRegex.test(token)) {
-      return <span key={i} className={TOKEN_STYLES.comment}>{token}</span>;
-    }
-    if (stringRegex.test(token)) {
+    if (stringTestRegex.test(token)) {
       return <span key={i} className={TOKEN_STYLES.string}>{token}</span>;
     }
-    if (numberRegex.test(token)) {
+    if (commentTestRegex.test(token)) {
+      return <span key={i} className={TOKEN_STYLES.comment}>{token}</span>;
+    }
+    if (keywordTestRegex.test(token)) {
+      return <span key={i} className={TOKEN_STYLES.keyword}>{token}</span>;
+    }
+    // Check for function calls (name followed by an implicit open paren)
+    if (/\b\w+\s*$/.test(token) && i + 1 < tokens.length && tokens[i+1].startsWith('(')) {
+        return <span key={i} className={TOKEN_STYLES.function}>{token}</span>;
+    }
+    if (numberTestRegex.test(token)) {
       return <span key={i} className={TOKEN_STYLES.number}>{token}</span>;
     }
-    // Basic function name detection
-    if (token.match(functionRegex)) {
-        const parts = token.split(/(\w+\s*\()/g).filter(Boolean);
-        return parts.map((part, j) => {
-            if (part.match(functionRegex)) {
-                 const funcName = part.substring(0, part.indexOf('('));
-                 const rest = part.substring(part.indexOf('('));
-                 return <span key={`${i}-${j}`}><span className={TOKEN_STYLES.function}>{funcName}</span>{rest}</span>
-            }
-            return part;
-        })
-    }
+
     return <span key={i} className={TOKEN_STYLES.default}>{token}</span>;
   });
 };
 
 const SyntaxHighlighter: React.FC<SyntaxHighlighterProps> = ({ code }) => {
   return (
-    <pre className="p-3 font-mono text-sm whitespace-pre-wrap">
+    <pre className="p-3 font-mono text-sm whitespace-pre-wrap" aria-hidden="true">
       <code>
         {highlightCode(code)}
       </code>
