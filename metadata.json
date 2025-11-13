@@ -1,0 +1,5 @@
+{
+  "name": "Keyan Python IDE",
+  "description": "A web-based Python IDE simulator with a themeable interface, code editor, realistic execution console, PIP package management, and a floating preview window.",
+  "requestFramePermissions": []
+}
