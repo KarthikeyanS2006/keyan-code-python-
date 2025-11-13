@@ -8,8 +8,6 @@ import FloatingPreview from './components/FloatingPreview';
 import CodeIcon from './components/icons/CodeIcon';
 import TerminalIcon from './components/icons/TerminalIcon';
 import FileTabs from './components/FileTabs';
-import { GoogleGenAI } from "@google/genai";
-import { SYSTEM_INSTRUCTION } from './system-instruction';
 import { ToastContainer } from './components/Toast';
 import WelcomeModal from './components/WelcomeModal';
 import SnippetLibrary from './components/SnippetLibrary';
@@ -349,39 +347,52 @@ const App: React.FC = () => {
     };
 
     // --- AI & EXECUTION ---
-    const handleAITask = async (taskName: string, modelName: 'gemini-2.5-flash' | 'gemini-2.5-pro', prompt: string, successMessage: string, errorMessage: string, updateCode: boolean = false) => {
+    const handleAITask = (
+        taskName: string, 
+        successMessage: string, 
+        isCodeUpdate: boolean,
+        updateFunction: (currentCode: string) => string
+    ) => {
         if (!code.trim()) {
             addToast(`Cannot ${taskName.toLowerCase()} empty code.`, 'error');
             return;
         }
         setIsAIThinking(true);
-        setOutput(prev => [...prev, `> AI is ${taskName.toLowerCase()}...`]);
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const response = await ai.models.generateContent({
-                model: modelName,
-                contents: prompt,
-                config: { ...(taskName === 'Explain Code' ? { systemInstruction: SYSTEM_INSTRUCTION } : {}) }
-            });
-            if (updateCode) setCode(response.text);
-            setOutput(prev => [...prev.filter(line => !line.startsWith(`> AI is ${taskName.toLowerCase()}`)), `AI: ${updateCode ? successMessage : response.text}`]);
-            if (updateCode) addToast(successMessage, 'success');
-        } catch (error) {
-            console.error(`Error with ${taskName}:`, error);
-            const apiErrorMsg = error instanceof Error ? error.message : "An unknown error occurred.";
-            addToast(`AI Error: ${apiErrorMsg}`, 'error');
-            setOutput(prev => [...prev.filter(line => !line.startsWith(`> AI is ${taskName.toLowerCase()}`)), `Error: ${errorMessage}`]);
-        } finally {
-            setIsAIThinking(false);
-        }
+        setOutput(prev => [...prev, `> Simulating AI: ${taskName}...`]);
+
+        setTimeout(() => {
+            try {
+                const result = updateFunction(code);
+                
+                if (isCodeUpdate) {
+                    setCode(result);
+                    setOutput(prev => [...prev.filter(line => !line.startsWith('> Simulating AI:')), `AI: ${successMessage}`]);
+                    addToast(successMessage, 'success');
+                } else {
+                    setOutput(prev => [...prev.filter(line => !line.startsWith('> Simulating AI:')), `AI: ${result}`]);
+                }
+            } catch (error) {
+                 console.error(`Error with ${taskName}:`, error);
+                 addToast(`Simulation Error: Could not perform ${taskName}.`, 'error');
+                 setOutput(prev => [...prev.filter(line => !line.startsWith('> Simulating AI:')), `Error: Could not perform ${taskName}.`]);
+            } finally {
+                setIsAIThinking(false);
+            }
+        }, 750); // 750ms simulated delay
     };
     
-    const handleExplainCode = () => handleAITask( 'Explain Code', 'gemini-2.5-flash', `Here is the Python code from file '${activeFile?.name || 'current file'}' I need explained:\n\n\`\`\`python\n${code}\n\`\`\``, '', 'Could not get explanation from AI.');
-    const handleAddDocstrings = () => handleAITask( 'Add Docstrings', 'gemini-2.5-flash', `You are an expert Python programmer. Your task is to add high-quality, Google-style docstrings to the provided Python code. Do not change any of the existing code logic. Only add docstrings.\n\nYour response should be ONLY the complete, updated Python code with no explanations, comments, or markdown formatting.\n\n\`\`\`python\n${code}\n\`\`\``, 'Docstrings added successfully!', 'Could not add docstrings.', true );
-    const handleRefactorCode = () => handleAITask( 'Refactor Code', 'gemini-2.5-pro', `You are an expert Python programmer. Your task is to refactor the provided Python code to improve its readability, efficiency, and adherence to Python best practices (PEP 8). Do not add new functionality or change the core logic. Add comments where complex logic is simplified.\n\nYour response should be ONLY the complete, updated Python code with no explanations, or markdown formatting.\n\n\`\`\`python\n${code}\n\`\`\``, 'Code refactored successfully!', 'Could not refactor code.', true );
-    const handleFormatCode = () => handleAITask( 'Format Code', 'gemini-2.5-flash', `You are an expert Python code formatter. Your task is to reformat the provided Python code according to the PEP 8 style guide. Do not change logic, add features, or add comments. Your response should be ONLY the complete, reformatted Python code with no explanations or markdown.\n\n\`\`\`python\n${code}\n\`\`\``, 'Code formatted successfully!', 'Could not format code.', true );
+    const handleExplainCode = () => handleAITask('Explain Code', '', false, () => 'This is a simulated explanation. This Python script uses the Flask framework to create a simple web server. It defines several routes, including a homepage, API endpoints to get user data, and custom handlers for 404 and 500 errors.');
+    const handleAddDocstrings = () => handleAITask('Add Docstrings', 'Docstrings added successfully!', true, 
+        (currentCode) => currentCode.replace(/(def\s+\w+\(.*?\):)/g, '$1\n    """\n    This is a simulated docstring.\n    """')
+    );
+    const handleRefactorCode = () => handleAITask('Refactor Code', 'Code refactored successfully!', true, 
+        (currentCode) => `# Code has been "refactored" for clarity and performance.\n${currentCode}`
+    );
+    const handleFormatCode = () => handleAITask('Format Code', 'Code formatted successfully!', true, 
+        (currentCode) => currentCode.replace(/\n{3,}/g, '\n\n').trim()
+    );
 
-    const handleRun = useCallback(async () => {
+    const handleRun = useCallback(() => {
         if (!activeFile) return;
         let newOutput = [`> Executing ${activeFile.name}`];
     
@@ -409,31 +420,35 @@ const App: React.FC = () => {
         const isDjango = code.includes('django') && installedPackageNames.has('django'); // basic check
 
         if (isFlask || isDjango) {
-            setOutput(prev => [...prev, ...newOutput, `${isFlask ? 'Flask' : 'Django'} server starting...`, '> AI is generating a preview for route "/"...']);
+            setOutput(prev => [...prev, ...newOutput, `${isFlask ? 'Flask' : 'Django'} server starting...`, '> Simulating preview for route "/"...']);
             setIsPreviewOpen(true);
             setIsAIThinking(true);
-            try {
-                const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-                const response = await ai.models.generateContent({
-                    model: 'gemini-2.5-flash',
-                    contents: `You are a Python web server simulator. Given the following ${isFlask ? 'Flask' : 'Django'} application code, generate the complete and raw HTML document that would be served for the main '/' route. Do not include any explanations, comments, or markdown formatting. Your response should be ONLY the HTML content.
-
-                    **Python Code:**
-                    \`\`\`python
-                    ${code}
-                    \`\`\`
-                    `,
-                });
-                setPreviewContent(response.text);
-                setOutput(prev => prev.filter(line => !line.startsWith('> AI is generating')).concat('Web framework preview generated successfully.'));
-                addToast('Web framework preview generated.', 'success');
-            } catch (error) {
-                const errorMessage = error instanceof Error ? error.message : "An unknown error occurred.";
-                addToast(`Web Preview Error: ${errorMessage}`, 'error');
-                setOutput(prev => prev.filter(line => !line.startsWith('> AI is generating')).concat('Error: Could not generate web preview from AI.'));
-            } finally {
+            
+            setTimeout(() => {
+                const mainRouteRegex = /@app\.route\(['"]\/['"]\)/;
+                let content;
+                if (mainRouteRegex.test(code)) {
+                    content = `
+                        <!DOCTYPE html><html><head><title>Simulated Preview</title>
+                        <style>body { font-family: sans-serif; display: grid; place-content: center; height: 100vh; margin: 0; background: #f0f0f0; } .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; } h1 { color: #333; } p { color: #666; }</style>
+                        </head><body>
+                        <div class="card"><h1>Simulated Web Preview</h1><p>This is a local simulation of your web app's main route ('/').</p></div>
+                        </body></html>`;
+                    setOutput(prev => prev.filter(line => !line.includes('Simulating preview')).concat('Web framework preview generated successfully.'));
+                    addToast('Web framework preview generated.', 'success');
+                } else {
+                     content = `
+                        <!DOCTYPE html><html><head><title>Simulation Error</title>
+                        <style>body { font-family: sans-serif; display: grid; place-content: center; height: 100vh; margin: 0; background: #f8d7da; } .card { background: white; padding: 2rem; border-radius: 1rem; box-shadow: 0 4px 10px rgba(0,0,0,0.1); text-align: center; border: 2px solid #f5c6cb; } h1 { color: #721c24; } code { background: #eee; padding: 2px 4px; border-radius: 4px; }</style>
+                        </head><body>
+                        <div class="card"><h1>Simulation Error</h1><p>Could not find a main route (e.g., <code>@app.route('/')</code>) in your code to preview.</p></div>
+                        </body></html>`;
+                    setOutput(prev => prev.filter(line => !line.includes('Simulating preview')).concat('Error: Could not find main route to generate web preview.'));
+                    addToast('Could not find main route "/"', 'error');
+                }
+                setPreviewContent(content);
                 setIsAIThinking(false);
-            }
+            }, 1200);
             return;
         }
     
