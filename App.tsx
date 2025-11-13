@@ -8,7 +8,7 @@ import FloatingPreview from './components/FloatingPreview';
 import CodeIcon from './components/icons/CodeIcon';
 import TerminalIcon from './components/icons/TerminalIcon';
 import FileTabs from './components/FileTabs';
-import { GoogleGenAI, Type } from "@google/genai";
+import { GoogleGenAI } from "@google/genai";
 import { SYSTEM_INSTRUCTION } from './system-instruction';
 import { ToastContainer } from './components/Toast';
 import WelcomeModal from './components/WelcomeModal';
@@ -445,60 +445,35 @@ const App: React.FC = () => {
     }, [code, packages, activeFile, addToast]);
     
 
-    const handleInstallPackage = async (packageName: string) => {
+    const handleInstallPackage = (packageName: string) => {
         if (!packageName) return;
         if (packages.some(p => p.name.toLowerCase() === packageName.toLowerCase())) {
             addToast(`Package '${packageName}' is already installed.`, 'info');
             return;
         }
 
-        setOutput(prev => [...prev, `> pip install ${packageName}`]);
+        const installingMessage = `Installing ${packageName}...`;
+        setOutput(prev => [...prev, `> pip install ${packageName}`, installingMessage]);
         setIsPipManagerOpen(false); // Close modal for better UX
-        setIsAIThinking(true);
 
-        try {
-            const ai = new GoogleGenAI({ apiKey: process.env.API_KEY });
-            const response = await ai.models.generateContent({
-                model: 'gemini-2.5-flash',
-                contents: `Provide the latest version and a short, one-sentence description for the Python package named "${packageName}".`,
-                config: {
-                    responseMimeType: "application/json",
-                    responseSchema: {
-                        type: Type.OBJECT,
-                        properties: {
-                            version: { type: Type.STRING, description: "The latest stable version number." },
-                            description: { type: Type.STRING, description: "A brief, one-sentence summary of the package." },
-                        },
-                        required: ["version", "description"],
-                    }
-                }
-            });
+        // Simulate installation delay for a more realistic feel
+        const installTime = 500 + Math.random() * 1000; // 0.5s to 1.5s delay
 
-            const packageInfo = JSON.parse(response.text);
+        setTimeout(() => {
+            // Generate a random, plausible version number
+            const randomVersion = `${Math.floor(Math.random() * 5)}.${Math.floor(Math.random() * 10)}.${Math.floor(Math.random() * 20)}`;
             
-            if (!packageInfo.version || !packageInfo.description) {
-                throw new Error("Invalid response format from AI.");
-            }
-
             const newPackage: PythonPackage = {
                 id: Date.now().toString(),
                 name: packageName,
-                version: packageInfo.version,
-                description: packageInfo.description,
+                version: randomVersion,
+                description: `A simulated ${packageName} package.`,
             };
 
             setPackages(prev => [...prev, newPackage]);
-            setOutput(prev => [...prev, `Successfully installed ${packageName} v${packageInfo.version}.`]);
+            setOutput(prev => prev.filter(line => line !== installingMessage).concat(`Successfully installed ${packageName} v${randomVersion}.`));
             addToast(`Package '${packageName}' installed!`, 'success');
-
-        } catch (error) {
-            console.error('Package installation simulation failed:', error);
-            const errorMessage = `Failed to install package '${packageName}'. Could not retrieve package information.`;
-            setOutput(prev => [...prev, `Error: ${errorMessage}`]);
-            addToast(errorMessage, 'error');
-        } finally {
-            setIsAIThinking(false);
-        }
+        }, installTime);
     };
     
     const handleUninstallPackage = (packageId: string) => {
