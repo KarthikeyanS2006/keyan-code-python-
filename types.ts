@@ -17,3 +17,9 @@ export interface Toast {
   message: string;
   type: 'success' | 'error' | 'info';
 }
+
+export interface Snippet {
+  id: string;
+  name: string;
+  content: string;
+}

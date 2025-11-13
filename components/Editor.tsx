@@ -1,5 +1,4 @@
-
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, forwardRef, useImperativeHandle } from 'react';
 import SyntaxHighlighter from './SyntaxHighlighter';
 
 interface EditorProps {
@@ -7,21 +6,24 @@ interface EditorProps {
   setCode: (code: string) => void;
 }
 
-const Editor: React.FC<EditorProps> = ({ code, setCode }) => {
+const Editor = forwardRef<HTMLTextAreaElement, EditorProps>(({ code, setCode }, ref) => {
   const [lineCount, setLineCount] = useState(code.split('\n').length);
   const lineCounterRef = useRef<HTMLDivElement>(null);
-  const textAreaRef = useRef<HTMLTextAreaElement>(null);
+  const localTextAreaRef = useRef<HTMLTextAreaElement>(null);
   const highlighterRef = useRef<HTMLDivElement>(null);
+
+  // Expose the local ref to the parent component via the forwarded ref
+  useImperativeHandle(ref, () => localTextAreaRef.current!);
 
   useEffect(() => {
     setLineCount(Math.max(1, code.split('\n').length));
   }, [code]);
 
   const syncScroll = () => {
-    if (lineCounterRef.current && textAreaRef.current && highlighterRef.current) {
-      lineCounterRef.current.scrollTop = textAreaRef.current.scrollTop;
-      highlighterRef.current.scrollTop = textAreaRef.current.scrollTop;
-      highlighterRef.current.scrollLeft = textAreaRef.current.scrollLeft;
+    if (lineCounterRef.current && localTextAreaRef.current && highlighterRef.current) {
+      lineCounterRef.current.scrollTop = localTextAreaRef.current.scrollTop;
+      highlighterRef.current.scrollTop = localTextAreaRef.current.scrollTop;
+      highlighterRef.current.scrollLeft = localTextAreaRef.current.scrollLeft;
     }
   };
 
@@ -48,7 +50,7 @@ const Editor: React.FC<EditorProps> = ({ code, setCode }) => {
             <SyntaxHighlighter code={code} />
         </div>
         <textarea
-          ref={textAreaRef}
+          ref={localTextAreaRef}
           value={code}
           onChange={handleCodeChange}
           onScroll={syncScroll}
@@ -61,6 +63,6 @@ const Editor: React.FC<EditorProps> = ({ code, setCode }) => {
       </div>
     </div>
   );
-};
+});
 
 export default Editor;

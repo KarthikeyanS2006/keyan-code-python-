@@ -3,6 +3,11 @@ import React, { useState, useRef, useEffect } from 'react';
 import type { EditorFile } from '../types';
 import CloseIcon from './icons/CloseIcon';
 import CodeIcon from './icons/CodeIcon';
+import PythonIcon from './icons/PythonIcon';
+import HTMLIcon from './icons/HTMLIcon';
+import CSSIcon from './icons/CSSIcon';
+import JSIcon from './icons/JSIcon';
+import TSIcon from './icons/TSIcon';
 
 interface FileTabsProps {
   files: EditorFile[];
@@ -12,6 +17,27 @@ interface FileTabsProps {
   onAddFile: () => void;
   onRenameFile: (id: string, newName: string) => boolean;
 }
+
+const getFileIcon = (fileName: string): React.ReactNode => {
+    const extension = fileName.split('.').pop()?.toLowerCase();
+    const iconProps = { className: "w-4 h-4" };
+
+    switch (extension) {
+        case 'py':
+            return <PythonIcon {...iconProps} />;
+        case 'html':
+            return <HTMLIcon {...iconProps} />;
+        case 'css':
+            return <CSSIcon {...iconProps} />;
+        case 'js':
+            return <JSIcon {...iconProps} />;
+        case 'ts':
+            return <TSIcon {...iconProps} />;
+        default:
+            return <CodeIcon {...iconProps} />;
+    }
+};
+
 
 const FileTabs: React.FC<FileTabsProps> = ({ files, activeFileId, onSelectFile, onCloseFile, onAddFile, onRenameFile }) => {
   const [renamingFileId, setRenamingFileId] = useState<string | null>(null);
@@ -28,13 +54,21 @@ const FileTabs: React.FC<FileTabsProps> = ({ files, activeFileId, onSelectFile, 
 
   const handleRenameStart = (file: EditorFile) => {
     setRenamingFileId(file.id);
-    setRenameInputValue(file.name.endsWith('.py') ? file.name.slice(0, -3) : file.name);
+    const lastDotIndex = file.name.lastIndexOf('.');
+    const nameWithoutExtension = lastDotIndex !== -1 ? file.name.substring(0, lastDotIndex) : file.name;
+    setRenameInputValue(nameWithoutExtension);
     setRenameError(false);
   };
 
   const handleRenameConfirm = () => {
     if (renamingFileId && renameInputValue.trim()) {
-      const success = onRenameFile(renamingFileId, renameInputValue.trim());
+      const originalFile = files.find(f => f.id === renamingFileId);
+      const originalExtension = originalFile ? originalFile.name.substring(originalFile.name.lastIndexOf('.')) : '';
+      const newNameWithExtension = originalFile && originalFile.name.includes('.') 
+          ? `${renameInputValue.trim()}${originalExtension}`
+          : renameInputValue.trim();
+
+      const success = onRenameFile(renamingFileId, newNameWithExtension);
       if (success) {
         setRenamingFileId(null);
         setRenameError(false);
@@ -76,7 +110,7 @@ const FileTabs: React.FC<FileTabsProps> = ({ files, activeFileId, onSelectFile, 
             }`}
           >
             <div className="flex items-center space-x-2">
-                <CodeIcon className="w-4 h-4" />
+                {getFileIcon(file.name)}
                 {renamingFileId === file.id ? (
                     <input
                         ref={renameInputRef}

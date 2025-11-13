@@ -5,23 +5,25 @@ A powerful, web-based Python IDE simulator built with React and TypeScript. It f
 ## ✨ Features
 
 ### Core IDE Functionality
-*   **💻 Multi-File Editor**: Work with multiple Python files in a clean, tabbed interface.
+*   **💻 Multi-File Editor**: Work with multiple Python, HTML, CSS, JS, and TypeScript files in a clean, tabbed interface.
 *   **🎨 Syntax Highlighting**: A custom, regex-based syntax highlighter for Python makes code easy to read.
-*   **▶️ Execution Console**: Simulate running your Python scripts and view their output, including print statements and errors.
+*   **▶️ Execution Console**: Simulate running your Python and TypeScript scripts and view their output, including print statements and errors.
+*   **🚀 Framework Simulation**: Run Flask or Django applications and get an AI-generated preview of your main route's HTML output.
 *   **📦 PIP Package Manager**: A user-friendly modal to simulate installing and uninstalling Python packages.
-*   **🖼️ Floating Preview Window**: A draggable and resizable window to simulate the output of web frameworks like Flask or Django.
+*   **🖼️ Floating Preview Window**: A draggable and resizable window with back/forward navigation to display web framework output.
 *   **📂 File Management**:
     *   **Upload/Download**: Easily move files between your local machine and the IDE.
     *   **Rename Files**: Double-click on a file tab to rename it on the fly.
     *   **Add/Close Files**: A fluid and intuitive tab management experience.
-*   **💾 Persistent Sessions**: Your files, code, and active tab are automatically saved to your browser's local storage.
-*   **🌗 Light/Dark Mode**: Switch between themes for your comfort.
+*   **💾 Persistent Sessions**: Your files, code, snippets, and active tab are automatically saved to your browser's local storage as you type.
+*   **🌗 Multiple Themes**: Switch between Light, Dark, and a new Blue Dark theme for your comfort.
 
 ### 🧠 Gemini AI Integration
-*   **Explain Code**: Get a detailed, easy-to-understand explanation of your code, broken down into logical parts.
-*   **Add Docstrings**: Automatically generate professional, Google-style docstrings for your functions and classes to improve code documentation.
+*   **⚡ Code Snippet Library**: Save, manage, and quickly insert your frequently used code snippets directly into the editor.
+*   **Explain Code**: Get a detailed, easy-to-understand explanation of your code.
+*   **Add Docstrings**: Automatically generate professional, Google-style docstrings for your functions and classes.
 *   **Refactor Code**: Let Gemini analyze and rewrite your code for improved readability, efficiency, and adherence to best practices.
-*   **Format Code (Coming Soon)**: Automatically format your code to follow PEP 8 standards.
+*   **Format Code**: Automatically format your Python code to follow PEP 8 standards with a single click.
 
 ## 🛠️ Technology Stack
 *   **Frontend**: React, TypeScript
@@ -53,7 +55,7 @@ The AI features in this IDE require a Google Gemini API key. You must provide th
     *   **Value**: Paste your Google Gemini API key here.
 3.  Click **Add** to save the variable.
 
-**Important**: This key is stored securely on Vercel and is necessary for the "Explain Code" and other AI-powered features to function.
+**Important**: This key is stored securely on Vercel and is necessary for the AI-powered features to function.
 
 ### Step 4: Deploy
 
@@ -64,9 +66,10 @@ Click the **Deploy** button. Vercel will build and deploy your IDE. Once finishe
 ### Menu Bar
 The top menu bar provides access to all major functions:
 *   **PIP**: Opens the package manager to simulate installing/uninstalling libraries.
-*   **Upload/Download**: Import a `.py` file from your computer or download the code from the active tab.
-*   **AI Tools (Explain, Docstrings, Refactor)**: Use these buttons to send the code from the active editor to the Gemini API for analysis or generation.
-*   **Theme Toggle**: Switch between light and dark modes.
+*   **Upload/Download**: Import a file from your computer or download the code from the active tab.
+*   **AI Tools (Explain, Docstrings, Refactor, Format)**: Use these buttons to send the code from the active editor to the Gemini API for analysis or generation.
+*   **Snippets**: Opens the Code Snippet library.
+*   **Theme Toggle**: Switch between light, dark, and blue-dark modes.
 *   **Toggle Preview**: Show or hide the floating preview window.
 *   **Run**: Executes the code in the active editor and displays the output in the console.
 
